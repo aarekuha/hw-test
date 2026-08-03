@@ -80,3 +80,43 @@ func TestTop10(t *testing.T) {
 		}
 	})
 }
+
+func TestTop10Additional(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want []string
+	}{
+		{
+			name: "Только игнорируемые символы",
+			src:  " \t\n\r ",
+			want: []string{},
+		},
+		{
+			name: "Меньше 10 слов",
+			src:  "привет привет друг",
+			want: []string{"привет", "друг"},
+		},
+		{
+			name: "Лексикографическая сортировка",
+			src:  "яндекс арбуз банан",
+			want: []string{"арбуз", "банан", "яндекс"},
+		},
+		{
+			name: "Знаки препинания считать отдельными словами",
+			src:  "привет, привет как",
+			want: []string{"как", "привет", "привет,"},
+		},
+		{
+			name: "Словоформы не учитываем",
+			src:  "нога ногу",
+			want: []string{"нога", "ногу"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, Top10(tt.src))
+		})
+	}
+}
