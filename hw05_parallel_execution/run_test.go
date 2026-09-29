@@ -15,13 +15,47 @@ import (
 func TestRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
+	t.Run("non positive errors limit", func(t *testing.T) {
+		for _, maxErrorsCount := range []int{0, -1} {
+			var runTasksCount atomic.Int32
+
+			tasks := []Task{
+				func() error {
+					runTasksCount.Add(1)
+					return nil
+				},
+			}
+			err := Run(tasks, 1, maxErrorsCount)
+
+			require.ErrorIs(t, err, ErrErrorsLimitExceeded)
+			require.Zero(t, runTasksCount.Load())
+		}
+	})
+
+	t.Run("invalid workers count", func(t *testing.T) {
+		var runTasksCount atomic.Int32
+
+		for _, workersCount := range []int{0, -1} {
+			tasks := []Task{
+				func() error {
+					runTasksCount.Add(1)
+					return nil
+				},
+			}
+			err := Run(tasks, workersCount, 1)
+
+			require.ErrorIs(t, err, ErrInvalidWorkersCount)
+			require.Zero(t, runTasksCount.Load())
+		}
+	})
+
 	t.Run("if were errors in first M tasks, than finished not more N+M tasks", func(t *testing.T) {
 		tasksCount := 50
 		tasks := make([]Task, 0, tasksCount)
 
 		var runTasksCount int32
 
-		for i := 0; i < tasksCount; i++ {
+		for i := range tasksCount {
 			err := fmt.Errorf("error from task %d", i)
 			tasks = append(tasks, func() error {
 				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
