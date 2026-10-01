@@ -28,7 +28,6 @@ func Run(tasks []Task, workersCount, maxErrorsCount int) error {
 	errorsCount := 0
 	jobs := make(chan Task)
 	stop := make(chan struct{})
-	limitExceeded := false
 
 	worker := func() {
 		defer wg.Done()
@@ -38,8 +37,7 @@ func Run(tasks []Task, workersCount, maxErrorsCount int) error {
 				mu.Lock()
 				errorsCount++
 
-				if errorsCount >= maxErrorsCount && !limitExceeded {
-					limitExceeded = true
+				if errorsCount == maxErrorsCount {
 					close(stop)
 				}
 				mu.Unlock()
