@@ -49,3 +49,65 @@ func TestList(t *testing.T) {
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
 }
+
+func TestListAdditional(t *testing.T) {
+	t.Run("move to front correct links", func(t *testing.T) {
+		l := NewList()
+
+		l.PushBack(10)
+		l.PushBack(20)
+		l.PushBack(30)
+		l.PushBack(40)
+
+		// [10, 20, 30, 40]
+
+		l.MoveToFront(l.Back())
+
+		require.Equal(t, 40, l.Front().Value)
+		require.Equal(t, 30, l.Back().Value)
+		require.Nil(t, l.Back().Next)
+		require.Nil(t, l.Front().Prev)
+	})
+
+	t.Run("remove correct links", func(t *testing.T) {
+		l := NewList()
+
+		l.PushBack(10)
+		l.PushBack(20)
+		l.PushBack(30)
+		l.PushBack(40)
+
+		// [10, 20, 30, 40]
+
+		l.Remove(l.Back())
+
+		require.Equal(t, 30, l.Back().Value)
+		require.Nil(t, l.Back().Next)
+	})
+
+	t.Run("remove front", func(t *testing.T) {
+		l := NewList()
+
+		l.PushBack(10)
+		remaining := l.PushBack(20)
+
+		l.Remove(l.Front())
+
+		require.Equal(t, 1, l.Len())
+		require.Same(t, remaining, l.Front())
+		require.Same(t, remaining, l.Back())
+		require.Nil(t, remaining.Prev)
+		require.Nil(t, remaining.Next)
+	})
+
+	t.Run("remove only item", func(t *testing.T) {
+		l := NewList()
+
+		item := l.PushBack(10)
+		l.Remove(item)
+
+		require.Zero(t, l.Len())
+		require.Nil(t, l.Front())
+		require.Nil(t, l.Back())
+	})
+}
