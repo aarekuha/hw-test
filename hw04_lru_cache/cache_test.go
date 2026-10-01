@@ -48,10 +48,6 @@ func TestCache(t *testing.T) {
 		require.False(t, ok)
 		require.Nil(t, val)
 	})
-
-	t.Run("purge logic", func(t *testing.T) {
-		// Write me
-	})
 }
 
 func TestCacheMultithreading(t *testing.T) {
@@ -76,4 +72,82 @@ func TestCacheMultithreading(t *testing.T) {
 	}()
 
 	wg.Wait()
+}
+
+func TestCacheAdditional(t *testing.T) {
+	t.Run("evicts least recently used", func(t *testing.T) {
+		c := NewCache(3)
+
+		require.False(t, c.Set("a", 1))
+		require.False(t, c.Set("b", 2))
+		require.False(t, c.Set("c", 3))
+
+		value, ok := c.Get("a") // a становится недавно использованным
+		require.True(t, ok)
+		require.Equal(t, 1, value)
+
+		require.False(t, c.Set("d", 4)) // должен вытеснить b, т.к. он будет самым поздним
+
+		value, ok = c.Get("b")
+		require.False(t, ok)
+		require.Nil(t, value)
+
+		value, ok = c.Get("a")
+		require.True(t, ok)
+		require.Equal(t, 1, value)
+	})
+
+	t.Run("zero capacity", func(t *testing.T) {
+		c := NewCache(0)
+
+		require.False(t, c.Set("a", 1))
+
+		value, ok := c.Get("a")
+		require.False(t, ok)
+		require.Nil(t, value)
+	})
+
+	t.Run("set existing key updates recency", func(t *testing.T) {
+		c := NewCache(2)
+
+		require.False(t, c.Set("a", 1))
+		require.False(t, c.Set("b", 2))
+		require.True(t, c.Set("a", 3))
+		require.False(t, c.Set("c", 4))
+
+		value, ok := c.Get("b")
+		require.False(t, ok)
+		require.Nil(t, value)
+
+		value, ok = c.Get("a")
+		require.True(t, ok)
+		require.Equal(t, 3, value)
+
+		value, ok = c.Get("c")
+		require.True(t, ok)
+		require.Equal(t, 4, value)
+	})
+
+	t.Run("clear", func(t *testing.T) {
+		c := NewCache(2)
+
+		c.Set("a", 1)
+		c.Set("b", 2)
+
+		c.Clear()
+
+		value, ok := c.Get("a")
+		require.False(t, ok)
+		require.Nil(t, value)
+
+		value, ok = c.Get("b")
+		require.False(t, ok)
+		require.Nil(t, value)
+
+		require.False(t, c.Set("c", 3))
+
+		value, ok = c.Get("c")
+		require.True(t, ok)
+		require.Equal(t, 3, value)
+	})
 }
